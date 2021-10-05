@@ -248,7 +248,8 @@ MonoBehaviour:
   maxRunningSpeed: 5
   runAcceleration: 30
   brakeAcceleration: 60
-  speedToStop: 0.1
+  stopAcceleration: 25
+  valueCloseToZero: 0.1
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
