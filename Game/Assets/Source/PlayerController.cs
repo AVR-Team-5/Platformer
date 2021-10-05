@@ -21,7 +21,7 @@ public class PlayerController : MonoBehaviour
     public float startVerticalSpeedUp;
     public float jumpGravity;
     public float fallGravity;
-    
+
     [Space(10)]
     public float maxRunningSpeed;
     public float runAcceleration;
@@ -59,9 +59,15 @@ public class PlayerController : MonoBehaviour
                 // no gravity calc
                 // exit condition
                 currentVerticalSpeed = 0f;
-                if (isJumping) {
+                if (isJumping)
+                {
                     state = PlayerState.StartedJump;
                     goto case PlayerState.StartedJump;
+                }
+                else if (!gc.IsGrounded)
+                {
+                    state = PlayerState.Falling;
+                    goto case PlayerState.Falling;
                 }
                 else
                     break;
@@ -91,17 +97,17 @@ public class PlayerController : MonoBehaviour
 
             default:
                 // make the player grounded
-                if (gc.IsGrounded) 
+                if (gc.IsGrounded)
                     state = PlayerState.Grounded;
-                
+
                 break;
         }
-        
-        
+
+
         // running stuff
         // TODO: replace all of these fucking Mathf function calls with something better
         var runDirection = Input.GetAxisRaw("Horizontal"); // -1, 0, 1, why not give out an int then :<
-        
+
         if (Mathf.Abs(runDirection) > valueCloseToZero)   // if there is an input to run
         {
             if (Mathf.Abs(currentHorizontalSpeed) < valueCloseToZero // if the player is stationary (horizontally)
@@ -117,15 +123,16 @@ public class PlayerController : MonoBehaviour
         else    // if no input
         {
             // subtract just enough speed so it stops at 0
-            currentHorizontalSpeed -= Mathf.Min(Mathf.Abs(currentHorizontalSpeed), 
+            currentHorizontalSpeed -= Mathf.Min(Mathf.Abs(currentHorizontalSpeed),
                 Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentHorizontalSpeed);
         }
 
         // limiting the speed to its scripted max
         currentHorizontalSpeed = Mathf.Clamp(currentHorizontalSpeed, -maxRunningSpeed, maxRunningSpeed);
-        
+
 
         rb.MovePosition(transform.position + currentVerticalSpeed * Time.fixedDeltaTime * Vector3.up
                                                  + currentHorizontalSpeed * Time.fixedDeltaTime * Vector3.right);
     }
+
 }
