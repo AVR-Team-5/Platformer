@@ -468,6 +468,9 @@ MonoBehaviour:
   brakeAcceleration: 60
   stopAcceleration: 25
   valueCloseToZero: 0.1
+  dashDuration: 0.1
+  dashSpeed: 20
+  afterDashMomentum: 25
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -521,7 +524,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
