@@ -29,13 +29,26 @@ public class PlayerController : MonoBehaviour
     public float stopAcceleration;
     public float valueCloseToZero;
 
+    [Space(10)] 
+    public float dashDuration;
+    public float dashSpeed;
+    public float afterDashMomentum;
+
     GroundController gc;
     Rigidbody2D rb;
+    
     Vector2 horizontalDirection;
-    bool isJumping;
-    float currentVerticalSpeed;
-    float currentHorizontalSpeed;
+    bool pressedJump;
+    
+    // float currentHorizontalSpeed;
+    private Vector3 currentVelocity;
+    
     PlayerState state = PlayerState.Falling;
+
+    bool pressedDash;
+    bool isDashing = false;
+    float currentDashDuration;
+    private Vector3 dashDirection;
 
     void Start()
     {
@@ -47,19 +60,55 @@ public class PlayerController : MonoBehaviour
     {
         horizontalDirection += Vector2.right * Input.GetAxisRaw("Horizontal");
 
-        isJumping = Input.GetKey(KeyCode.Space);
+        pressedJump = Input.GetKey(KeyCode.Space);
+        
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+            pressedDash = true;
     }
 
     void FixedUpdate()
     {
+        if (pressedDash)
+        {
+            pressedDash = false;
+            isDashing = true;
+            
+            currentVelocity = Vector3.zero;
+            
+            currentDashDuration = 0f;
+            dashDirection = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
+        }
+        else if (isDashing)
+        {
+            currentDashDuration += Time.fixedDeltaTime;
+            isDashing = currentDashDuration <= dashDuration;
+
+            // leave some momentum after dashing
+            if (!isDashing)
+            {
+                state = PlayerState.Jumping;
+                currentVelocity = dashDirection * afterDashMomentum;
+                print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
+            }
+        }
+
+
+        if (isDashing)
+        {
+            rb.MovePosition(transform.position + dashSpeed * Time.fixedDeltaTime * dashDirection);
+            return;
+        }
+
+
+
         // jumping stuff
         switch (state)
         {
             case PlayerState.Grounded:
                 // no gravity calc
                 // exit condition
-                currentVerticalSpeed = 0f;
-                if (isJumping)
+                currentVelocity.y = 0f;
+                if (pressedJump)
                 {
                     state = PlayerState.StartedJump;
                     goto case PlayerState.StartedJump;
@@ -74,7 +123,7 @@ public class PlayerController : MonoBehaviour
 
             case PlayerState.StartedJump:
                 // init velocity
-                currentVerticalSpeed = startVerticalSpeedUp;
+                currentVelocity.y = startVerticalSpeedUp;
 
                 // continue calculations
                 state = PlayerState.Jumping;
@@ -82,16 +131,16 @@ public class PlayerController : MonoBehaviour
 
             case PlayerState.Jumping:
                 // add jump acceleration to current jump velocity
-                currentVerticalSpeed += jumpGravity * Time.fixedDeltaTime;
+                currentVelocity.y += jumpGravity * Time.fixedDeltaTime;
 
-                if (!isJumping || currentVerticalSpeed < 0f)
+                if (!pressedJump || currentVelocity.y < 0f)
                     goto case PlayerState.Falling;
 
                 goto default;
 
             case PlayerState.Falling:
                 // add fall acceleration to current jump velocity
-                currentVerticalSpeed += fallGravity * Time.fixedDeltaTime;
+                currentVelocity.y += fallGravity * Time.fixedDeltaTime;
 
                 goto default;
 
@@ -107,32 +156,32 @@ public class PlayerController : MonoBehaviour
         // running stuff
         // TODO: replace all of these fucking Mathf function calls with something better
         var runDirection = Input.GetAxisRaw("Horizontal"); // -1, 0, 1, why not give out an int then :<
-
+        
         if (Mathf.Abs(runDirection) > valueCloseToZero)   // if there is an input to run
         {
-            if (Mathf.Abs(currentHorizontalSpeed) < valueCloseToZero // if the player is stationary (horizontally)
-                || runDirection * currentHorizontalSpeed > 0) // or if he continues to run in the same direction as before
+            if (Mathf.Abs(currentVelocity.x) < valueCloseToZero // if the player is stationary (horizontally)
+                || runDirection * currentVelocity.x > 0) // or if he continues to run in the same direction as before
             {
-                currentHorizontalSpeed += runAcceleration * runDirection * Time.deltaTime; //accelerate further
+                currentVelocity.x += runAcceleration * runDirection * Time.deltaTime; //accelerate further
             }
             else //otherwise the player is braking
             {
-                currentHorizontalSpeed += brakeAcceleration * runDirection * Time.deltaTime;
+                currentVelocity.x += brakeAcceleration * runDirection * Time.deltaTime;
             }
         }
         else    // if no input
         {
             // subtract just enough speed so it stops at 0
-            currentHorizontalSpeed -= Mathf.Min(Mathf.Abs(currentHorizontalSpeed),
-                Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentHorizontalSpeed);
+            currentVelocity.x -= Mathf.Min(Mathf.Abs(currentVelocity.x),
+                Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentVelocity.x);
         }
 
         // limiting the speed to its scripted max
-        currentHorizontalSpeed = Mathf.Clamp(currentHorizontalSpeed, -maxRunningSpeed, maxRunningSpeed);
+        // TODO: don't clamp if the speed is received from an outside source (such as dashing)
+        currentVelocity.x = Mathf.Clamp(currentVelocity.x, -maxRunningSpeed, maxRunningSpeed);
 
 
-        rb.MovePosition(transform.position + currentVerticalSpeed * Time.fixedDeltaTime * Vector3.up
-                                                 + currentHorizontalSpeed * Time.fixedDeltaTime * Vector3.right);
+        rb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
     }
 
 }
