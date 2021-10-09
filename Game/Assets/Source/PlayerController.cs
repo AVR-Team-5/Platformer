@@ -131,10 +131,10 @@ public class PlayerController : MonoBehaviour
 
             case PlayerState.Jumping:
                 // add jump acceleration to current jump velocity
-                currentVelocity.y += jumpGravity * Time.fixedDeltaTime;
-
                 if (!pressedJump || currentVelocity.y < 0f)
                     goto case PlayerState.Falling;
+
+                currentVelocity.y += jumpGravity * Time.fixedDeltaTime;
 
                 goto default;
 
@@ -162,7 +162,21 @@ public class PlayerController : MonoBehaviour
             if (Mathf.Abs(currentVelocity.x) < valueCloseToZero // if the player is stationary (horizontally)
                 || runDirection * currentVelocity.x > 0) // or if he continues to run in the same direction as before
             {
-                currentVelocity.x += runAcceleration * runDirection * Time.deltaTime; //accelerate further
+                float addedVelocity = 0f;
+
+                if (gc.IsGrounded) {
+                    // brake if current velocity is greater than max
+                    
+                } else {
+                    // conserve velocity
+                    addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x));
+                    addedVelocity = Mathf.Clamp(addedVelocity, 0f, maxRunningSpeed) * runDirection;
+                    print(addedVelocity);
+
+                    // currentVelocity.x += runAcceleration * runDirection * Time.deltaTime; //accelerate further
+                }
+
+                currentVelocity.x += addedVelocity;
             }
             else //otherwise the player is braking
             {
@@ -178,7 +192,7 @@ public class PlayerController : MonoBehaviour
 
         // limiting the speed to its scripted max
         // TODO: don't clamp if the speed is received from an outside source (such as dashing)
-        currentVelocity.x = Mathf.Clamp(currentVelocity.x, -maxRunningSpeed, maxRunningSpeed);
+        // currentVelocity.x = Mathf.Clamp(currentVelocity.x, -maxRunningSpeed, maxRunningSpeed);
 
 
         rb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
