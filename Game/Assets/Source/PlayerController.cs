@@ -7,6 +7,8 @@ using UnityEngine;
 // otherwise it might get fucky 
 // as the state machine will end up in an infinite cycle
 
+// TODO: rewrite the HELL out of this script
+
 enum PlayerState
 {
     Grounded,
@@ -88,7 +90,7 @@ public class PlayerController : MonoBehaviour
             {
                 state = PlayerState.Jumping;
                 currentVelocity = dashDirection * afterDashMomentum;
-                print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
+                // print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
             }
         }
 
@@ -132,7 +134,10 @@ public class PlayerController : MonoBehaviour
             case PlayerState.Jumping:
                 // add jump acceleration to current jump velocity
                 if (!pressedJump || currentVelocity.y < 0f)
+                {
+                    state = PlayerState.Falling;
                     goto case PlayerState.Falling;
+                }
 
                 currentVelocity.y += jumpGravity * Time.fixedDeltaTime;
 
@@ -151,7 +156,7 @@ public class PlayerController : MonoBehaviour
 
                 break;
         }
-
+        
 
         // running stuff
         // TODO: replace all of these fucking Mathf function calls with something better
@@ -166,19 +171,27 @@ public class PlayerController : MonoBehaviour
 
                 if (gc.IsGrounded) {
                     // brake if current velocity is greater than max
-                    
+                    if (Mathf.Abs(currentVelocity.x) > maxRunningSpeed)
+                    {
+                        addedVelocity = Mathf.Max(-brakeAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
+                        print(-brakeAcceleration * Time.deltaTime + " " +
+                              (maxRunningSpeed - Mathf.Abs(currentVelocity.x)));
+                    }
+                    else
+                    {
+                        addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
+                    }
                 } else {
                     // conserve velocity
                     addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x));
                     addedVelocity = Mathf.Clamp(addedVelocity, 0f, maxRunningSpeed) * runDirection;
-                    print(addedVelocity);
 
                     // currentVelocity.x += runAcceleration * runDirection * Time.deltaTime; //accelerate further
                 }
 
                 currentVelocity.x += addedVelocity;
             }
-            else //otherwise the player is braking
+            else // otherwise the player is braking
             {
                 currentVelocity.x += brakeAcceleration * runDirection * Time.deltaTime;
             }
@@ -189,11 +202,6 @@ public class PlayerController : MonoBehaviour
             currentVelocity.x -= Mathf.Min(Mathf.Abs(currentVelocity.x),
                 Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentVelocity.x);
         }
-
-        // limiting the speed to its scripted max
-        // TODO: don't clamp if the speed is received from an outside source (such as dashing)
-        // currentVelocity.x = Mathf.Clamp(currentVelocity.x, -maxRunningSpeed, maxRunningSpeed);
-
 
         rb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
     }
