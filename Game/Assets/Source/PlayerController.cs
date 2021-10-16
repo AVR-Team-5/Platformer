@@ -36,10 +36,9 @@ public class PlayerController : MonoBehaviour
     public float dashSpeed;
     public float afterDashMomentum;
 
-    GroundController gc;
-    Rigidbody2D rb;
+    GroundController _groundControl;
+    Rigidbody2D _rigidbody;
     
-    Vector2 horizontalDirection;
     bool pressedJump;
     
     // float currentHorizontalSpeed;
@@ -54,17 +53,15 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-        gc = GetComponentsInChildren<GroundController>()[0];
+        _rigidbody = GetComponent<Rigidbody2D>();
+        _groundControl = GetComponentsInChildren<GroundController>()[0];
     }
 
     void Update()
     {
-        horizontalDirection += Vector2.right * Input.GetAxisRaw("Horizontal");
-
-        pressedJump = Input.GetKey(KeyCode.Space);
+        pressedJump = Input.GetAxisRaw("Jump") > 0.5f;
         
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        if (Input.GetAxisRaw("Cancel") > 0.5f)
             pressedDash = true;
     }
 
@@ -78,7 +75,7 @@ public class PlayerController : MonoBehaviour
             currentVelocity = Vector3.zero;
             
             currentDashDuration = 0f;
-            dashDirection = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
+            dashDirection = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
         }
         else if (isDashing)
         {
@@ -97,10 +94,9 @@ public class PlayerController : MonoBehaviour
 
         if (isDashing)
         {
-            rb.MovePosition(transform.position + dashSpeed * Time.fixedDeltaTime * dashDirection);
+            _rigidbody.MovePosition(transform.position + dashSpeed * Time.fixedDeltaTime * dashDirection);
             return;
         }
-
 
 
         // jumping stuff
@@ -115,7 +111,7 @@ public class PlayerController : MonoBehaviour
                     state = PlayerState.StartedJump;
                     goto case PlayerState.StartedJump;
                 }
-                else if (!gc.IsGrounded)
+                else if (!_groundControl.IsGrounded)
                 {
                     state = PlayerState.Falling;
                     goto case PlayerState.Falling;
@@ -151,7 +147,7 @@ public class PlayerController : MonoBehaviour
 
             default:
                 // make the player grounded
-                if (gc.IsGrounded)
+                if (_groundControl.IsGrounded)
                     state = PlayerState.Grounded;
 
                 break;
@@ -162,48 +158,38 @@ public class PlayerController : MonoBehaviour
         // TODO: replace all of these fucking Mathf function calls with something better
         var runDirection = Input.GetAxisRaw("Horizontal"); // -1, 0, 1, why not give out an int then :<
         
-        if (Mathf.Abs(runDirection) > valueCloseToZero)   // if there is an input to run
-        {
-            if (Mathf.Abs(currentVelocity.x) < valueCloseToZero // if the player is stationary (horizontally)
-                || runDirection * currentVelocity.x > 0) // or if he continues to run in the same direction as before
-            {
-                float addedVelocity = 0f;
+        currentVelocity.x += GetAddedVelocity(runDirection);
 
-                if (gc.IsGrounded) {
+        _rigidbody.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
+
+        float GetAddedVelocity(float runDirection)
+        {
+            if (Mathf.Abs(runDirection) < valueCloseToZero)
+            {
+                // subtract just enough speed so it stops at 0
+                return -Mathf.Min(Mathf.Abs(currentVelocity.x),
+                    Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentVelocity.x);
+            }
+
+
+            if (Mathf.Abs(currentVelocity.x) < valueCloseToZero // if the player is stationary (horizontally)
+                            || runDirection * currentVelocity.x > 0) // or if he continues to run in the same direction as before
+            {
+                if (_groundControl.IsGrounded)
+                {
                     // brake if current velocity is greater than max
                     if (Mathf.Abs(currentVelocity.x) > maxRunningSpeed)
                     {
-                        addedVelocity = Mathf.Max(-brakeAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
-                        print(-brakeAcceleration * Time.deltaTime + " " +
-                              (maxRunningSpeed - Mathf.Abs(currentVelocity.x)));
+                        return Mathf.Max(-brakeAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
                     }
-                    else
-                    {
-                        addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
-                    }
-                } else {
-                    // conserve velocity
-                    addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x));
-                    addedVelocity = Mathf.Clamp(addedVelocity, 0f, maxRunningSpeed) * runDirection;
-
-                    // currentVelocity.x += runAcceleration * runDirection * Time.deltaTime; //accelerate further
+                    return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
                 }
-
-                currentVelocity.x += addedVelocity;
+                // conserve velocity
+                float addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x));
+                return Mathf.Clamp(addedVelocity, 0f, maxRunningSpeed) * runDirection;
             }
-            else // otherwise the player is braking
-            {
-                currentVelocity.x += brakeAcceleration * runDirection * Time.deltaTime;
-            }
+            return brakeAcceleration * runDirection * Time.deltaTime;
         }
-        else    // if no input
-        {
-            // subtract just enough speed so it stops at 0
-            currentVelocity.x -= Mathf.Min(Mathf.Abs(currentVelocity.x),
-                Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentVelocity.x);
-        }
-
-        rb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
     }
 
 }
