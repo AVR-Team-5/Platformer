@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 // TODO: make sure floor trigger gets out of ground at the first frame of the jump
@@ -20,9 +17,14 @@ enum PlayerState
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
-    public float startVerticalSpeedUp;
-    public float jumpGravity;
-    public float fallGravity;
+    // TODO: reinit these values if they're switched in editor
+    public float jumpHeight;
+    public float timeTillJumpPeak;
+    public float timeTillFallPeak;
+
+    private float startVerticalSpeedUp;
+    private float jumpGravity;
+    private float fallGravity;
 
     [Space(10)]
     public float maxRunningSpeed;
@@ -47,7 +49,7 @@ public class PlayerController : MonoBehaviour
     PlayerState state = PlayerState.Falling;
 
     bool pressedDash;
-    bool isDashing = false;
+    bool isDashing;
     float currentDashDuration;
     private Vector3 dashDirection;
 
@@ -55,6 +57,10 @@ public class PlayerController : MonoBehaviour
     {
         _rigidbody = GetComponent<Rigidbody2D>();
         _groundControl = GetComponentsInChildren<GroundController>()[0];
+
+        jumpGravity = timeTillJumpPeak * timeTillJumpPeak / (2 * jumpHeight);
+        fallGravity = timeTillJumpPeak * timeTillJumpPeak / (2 * jumpHeight);
+        startVerticalSpeedUp = jumpHeight / timeTillJumpPeak - jumpGravity * timeTillJumpPeak / 2;
     }
 
     void Update()
@@ -163,6 +169,7 @@ public class PlayerController : MonoBehaviour
 
         _rigidbody.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
 
+
         float GetAddedVelocity(float runDirection)
         {
             if (Mathf.Abs(runDirection) < valueCloseToZero)
@@ -186,8 +193,7 @@ public class PlayerController : MonoBehaviour
                     return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
                 }
                 // conserve velocity
-                float addedVelocity = Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x));
-                return Mathf.Clamp(addedVelocity, 0f, maxRunningSpeed) * runDirection;
+                return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
             }
             return brakeAcceleration * runDirection * Time.deltaTime;
         }
