@@ -61,7 +61,8 @@ public class PlayerController : MonoBehaviour
     {
         pressedJump = Input.GetAxisRaw("Jump") > 0.5f;
         
-        if (Input.GetAxisRaw("Cancel") > 0.5f)
+        if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown("joystick button 1"))
+        // if (Input.GetAxisRaw("Dash") > 0.5f)
             pressedDash = true;
     }
 

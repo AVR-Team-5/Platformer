@@ -353,6 +353,7 @@ GameObject:
   - component: {fileID: 498274178}
   - component: {fileID: 498274180}
   - component: {fileID: 498274181}
+  - component: {fileID: 498274182}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -442,7 +443,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 0
+  m_GravityScale: 1
   m_Material: {fileID: 0}
   m_Interpolate: 1
   m_SleepingMode: 1
@@ -471,6 +472,27 @@ MonoBehaviour:
   dashDuration: 0.1
   dashSpeed: 20
   afterDashMomentum: 25
+--- !u!114 &498274182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498274177}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96ef7a848defec4498a51f1ed168ccd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rb: {fileID: 498274180}
+  force: 1000
+  speed: 1
+  pressedJump: 0
+  pressedDash: 0
+  step: 0.1
+  startPosition: {x: 0, y: 0}
+  endPosition: {x: 0, y: 0}
+  dashDirection: {x: 0, y: 5, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
