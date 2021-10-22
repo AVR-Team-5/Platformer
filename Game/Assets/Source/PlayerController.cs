@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 // TODO: make sure floor trigger gets out of ground at the first frame of the jump
@@ -58,8 +59,18 @@ public class PlayerController : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody2D>();
         _groundControl = GetComponentsInChildren<GroundController>()[0];
 
-        jumpGravity = timeTillJumpPeak * timeTillJumpPeak / (2 * jumpHeight);
-        fallGravity = timeTillJumpPeak * timeTillJumpPeak / (2 * jumpHeight);
+        InitPhysicsValues();        
+    }
+
+    private void OnValidate()
+    {
+        InitPhysicsValues();
+    }
+
+    void InitPhysicsValues()
+    {
+        jumpGravity = -(2 * jumpHeight) / (timeTillJumpPeak * timeTillJumpPeak);
+        fallGravity = -(2 * jumpHeight) / (timeTillFallPeak * timeTillFallPeak);
         startVerticalSpeedUp = jumpHeight / timeTillJumpPeak - jumpGravity * timeTillJumpPeak / 2;
     }
 
@@ -68,12 +79,13 @@ public class PlayerController : MonoBehaviour
         pressedJump = Input.GetAxisRaw("Jump") > 0.5f;
         
         if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown("joystick button 1"))
-        // if (Input.GetAxisRaw("Dash") > 0.5f)
             pressedDash = true;
     }
 
     void FixedUpdate()
     {
+        bool endedDash = false;
+        
         if (pressedDash)
         {
             pressedDash = false;
@@ -94,10 +106,10 @@ public class PlayerController : MonoBehaviour
             {
                 state = PlayerState.Jumping;
                 currentVelocity = dashDirection * afterDashMomentum;
-                // print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
+                print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
+                endedDash = true;
             }
         }
-
 
         if (isDashing)
         {
@@ -165,7 +177,13 @@ public class PlayerController : MonoBehaviour
         // TODO: replace all of these fucking Mathf function calls with something better
         var runDirection = Input.GetAxisRaw("Horizontal"); // -1, 0, 1, why not give out an int then :<
         
+        if (endedDash)
+            print(currentVelocity);
+        
         currentVelocity.x += GetAddedVelocity(runDirection);
+        
+        if (endedDash)
+            print(currentVelocity);
 
         _rigidbody.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
 
@@ -193,7 +211,11 @@ public class PlayerController : MonoBehaviour
                     return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
                 }
                 // conserve velocity
-                return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
+                return Mathf.Abs(currentVelocity.x) > maxRunningSpeed
+                    ? 0f
+                    : runAcceleration * Time.deltaTime * runDirection;
+
+                // return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
             }
             return brakeAcceleration * runDirection * Time.deltaTime;
         }

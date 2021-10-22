@@ -460,16 +460,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8f869e7ffa3cfa4a95715f554c1081e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpHeight: 7.5
-  timeTillJumpPeak: 0.1
-  timeTillFallPeak: 0.01
+  jumpHeight: 5.2
+  timeTillJumpPeak: 0.33
+  timeTillFallPeak: 0.25
   maxRunningSpeed: 5
   runAcceleration: 30
   brakeAcceleration: 60
   stopAcceleration: 60
   valueCloseToZero: 0.1
   dashDuration: 0.1
-  dashSpeed: 20
+  dashSpeed: 25
   afterDashMomentum: 25
 --- !u!1 &519420028
 GameObject:
