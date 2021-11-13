@@ -23,7 +23,7 @@ public readonly struct InputEvent
         this.timestamp = timestamp;
     }
 }
-
+[RequireComponent(typeof(MenuManager))]
 public class InputSystem : MonoBehaviour
 {
     private MenuManager _menuManager;
@@ -31,11 +31,12 @@ public class InputSystem : MonoBehaviour
         EventType.KeyDown,
         EventType.KeyUp
     };
-    private Stopwatch _stopwatch;
+    private Stopwatch _stopwatch = new Stopwatch();
 
 
     void Start() {
         _stopwatch.Start();
+        _menuManager = GetComponent<MenuManager>();
     }
 
     void OnGUI()
