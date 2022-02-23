@@ -1,45 +1,49 @@
-using UnityEngine;
 using System.Collections.Generic;
-public enum Menu {
-    Game, 
-    Main
-}
+using UnityEngine;
 
-[RequireComponent(typeof(GameMenu))]
-[RequireComponent(typeof(MainMenu))]
-public class MenuManager : MonoBehaviour
+namespace Source.MenuSystem
 {
-    Stack<IInputHandler> menuStack = new Stack<IInputHandler>();
-    Dictionary<Menu, IInputHandler> menuList = new Dictionary<Menu, IInputHandler>();
+    public enum MenuID {
+        Game, 
+        Main
+    }
+
+    [RequireComponent(typeof(GameMenu))]
+    [RequireComponent(typeof(MainMenu))]
+    public class MenuManager : MonoBehaviour
+    {
+        private readonly Stack<IInputHandler> _menuStack = new Stack<IInputHandler>();
+        private readonly Dictionary<MenuID, IInputHandler> _menuList = new Dictionary<MenuID, IInputHandler>();
     
-    public void CatchInput(InputEvent inputEvent) {
-        // redirect to current active menu
-        menuStack.Peek().HandleInput(inputEvent);
-    }
+        public void CatchInput(InputEvent inputEvent) {
+            // redirect to current active menu
+            _menuStack.Peek().HandleInput(inputEvent);
+        }
 
-    // probably don't send the actual menus, just an id
-    public void PushMenu(IInputHandler menu) {
-        menuStack.Peek()?.Deactivate();
-        menuStack.Push(menu);
-        menuStack.Peek().Activate();
-    }
+        // probably don't send the actual menus, just an id
+        public void PushMenu(IInputHandler menu) {
+            _menuStack.Peek()?.Deactivate();
+            _menuStack.Push(menu);
+            _menuStack.Peek().Activate();
+        }
 
-    public void PushMenu(Menu menu) {
-        menuStack.Peek()?.Deactivate();
-        menuStack.Push(menuList[menu]);
-        menuStack.Peek().Activate();
-    }
+        public void PushMenu(MenuID menuID) {
+            _menuStack.Peek()?.Deactivate();
+            _menuStack.Push(_menuList[menuID]);
+            _menuStack.Peek().Activate();
+        }
 
-    public void PopMenu() {
-        menuStack.Peek().Deactivate();
-        menuStack.Pop();
-        menuStack.Peek().Activate();
-    }
+        public void PopMenu() {
+            _menuStack.Peek().Deactivate();
+            _menuStack.Pop();
+            _menuStack.Peek().Activate();
+        }
 
-    void Start() {
-        menuList.Add(Menu.Game, GetComponent<GameMenu>());
-        menuList.Add(Menu.Main, GetComponent<MainMenu>());
+        private void Start() {
+            _menuList.Add(MenuID.Game, GetComponent<GameMenu>());
+            _menuList.Add(MenuID.Main, GetComponent<MainMenu>());
         
-        menuStack.Push(menuList[Menu.Game]);
+            _menuStack.Push(_menuList[MenuID.Game]);
+        }
     }
 }

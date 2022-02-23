@@ -1,31 +1,34 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using System.Diagnostics;
 
-[RequireComponent(typeof(MenuManager))]
-public class GameMenu : MonoBehaviour, IInputHandler
+namespace Source.MenuSystem
 {
-    private MenuManager menuManager;
-
-    void Start() {
-        menuManager = GetComponent<MenuManager>();
-    }
-
-    public void Activate()
+    [RequireComponent(typeof(MenuManager))]
+    public class GameMenu : MonoBehaviour, IInputHandler
     {
-        print("Activated game menu");
-    }
+        private MenuManager _menuManager;
+        private PlayerController.PlayerController _playerController;
 
-    public void Deactivate()
-    {
-        print("Deactivated game menu");
-    }
+        void Start() {
+            _menuManager = GetComponent<MenuManager>();
+            _playerController = FindObjectOfType<PlayerController.PlayerController>();
+        }
 
-    public void HandleInput(InputEvent inputEvent)
-    {
-        if (inputEvent.key == KeyCode.Escape && inputEvent.type == EventType.KeyDown) {
-            menuManager.PushMenu(Menu.Main);
+        public void Activate()
+        {
+            print("Activated game menu");
+        }
+
+        public void Deactivate()
+        {
+            print("Deactivated game menu");
+        }
+
+        public void HandleInput(InputEvent inputEvent)
+        {
+            if (inputEvent.key == KeyCode.Escape && inputEvent.type == EventType.KeyDown) 
+                _menuManager.PushMenu(MenuID.Main);
+            else 
+                _playerController.HandleInput(inputEvent);
         }
     }
 }
