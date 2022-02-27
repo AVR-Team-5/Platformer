@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Source.MenuSystem
 {
     [RequireComponent(typeof(MenuManager))]
-    public class MainMenu : MonoBehaviour, IInputHandler
+    public class PauseMenu : MonoBehaviour, IInputHandler
     {
         private MenuManager menuManager;
 

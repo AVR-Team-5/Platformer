@@ -9,7 +9,7 @@ namespace Source.MenuSystem
     }
 
     [RequireComponent(typeof(GameMenu))]
-    [RequireComponent(typeof(MainMenu))]
+    [RequireComponent(typeof(PauseMenu))]
     public class MenuManager : MonoBehaviour
     {
         private readonly Stack<IInputHandler> _menuStack = new Stack<IInputHandler>();
@@ -41,7 +41,7 @@ namespace Source.MenuSystem
 
         private void Start() {
             _menuList.Add(MenuID.Game, GetComponent<GameMenu>());
-            _menuList.Add(MenuID.Main, GetComponent<MainMenu>());
+            _menuList.Add(MenuID.Main, GetComponent<PauseMenu>());
         
             _menuStack.Push(_menuList[MenuID.Game]);
         }

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Source.MenuSystem;
 using UnityEngine;
 
@@ -9,21 +11,78 @@ namespace Source.PlayerController
     // as the state machine will end up in an infinite cycle
 
     // TODO: rewrite the HELL out of this script
-
-    enum PlayerState
+    
+    public struct KbInputEvent
     {
-        Grounded,
-        StartedJump,
-        Jumping,
-        Falling
+        private KeyCode _keyCode;
+        private EventType _eventType;
+
+        public KbInputEvent(KeyCode keyCode, EventType eventType)
+        {
+            _keyCode = keyCode;
+            _eventType = eventType;
+        }
     }
 
-    public class InputState
+    public class KbInputBuffer
     {
-        public Vector2 MovementDirection = Vector2.zero;
-        public bool StartedJump = false;
-        public bool IsJumping = false;
-        public bool StartedDash = false;
+        public bool IsUpHeld;
+        public bool IsDownHeld;
+        public bool IsLeftHeld;
+        public bool IsRightHeld;
+        public bool IsJumpHeld;
+        
+        private readonly EventType[] _acceptedTypes = {EventType.KeyDown, EventType.KeyUp};
+        
+        public void RegisterInput(KeyCode key, EventType type)
+        {
+            if (!_acceptedTypes.Contains(type))
+            {
+                Debug.Log("WARNING: not accepted input type was sent to register: " + type);
+                return;
+            }
+
+            var result = type == EventType.KeyDown;
+            
+            switch (key)
+            {
+                case KeyCode.W:
+                    IsUpHeld = result;
+                    break;
+                case KeyCode.S:
+                    IsDownHeld = result;
+                    break;
+                case KeyCode.A:
+                    IsLeftHeld = result;
+                    break;
+                case KeyCode.D:
+                    IsRightHeld = result;
+                    break;
+                case KeyCode.Space:
+                    IsJumpHeld = result;
+                    break;
+                
+                default:
+                    Debug.Log("WARNING: not accepted input key was sent to register: " + key);
+                    break;
+            }
+        }
+
+        public Vector2 DesiredMoveDir()
+        {
+            var result = Vector2.zero;
+            
+            if (IsUpHeld)
+                result += Vector2.up;
+            if (IsDownHeld)
+                result += Vector2.down;
+            if (IsLeftHeld)
+                result += Vector2.left;
+            if (IsRightHeld)
+                result += Vector2.right;
+            
+            return result;
+        }
     }
 
     [RequireComponent(typeof(Rigidbody2D))]
@@ -34,9 +93,9 @@ namespace Source.PlayerController
         public float timeTillJumpPeak;
         public float timeTillFallPeak;
 
-        private float startVerticalSpeedUp;
-        private float jumpGravity;
-        private float fallGravity;
+        public float startVerticalSpeedUp;
+        public float jumpGravity;
+        public float fallGravity;
 
         [Space(10)]
         public float maxRunningSpeed;
@@ -50,27 +109,70 @@ namespace Source.PlayerController
         public float dashSpeed;
         public float afterDashMomentum;
 
-        GroundController _groundControl;
-        Rigidbody2D _rigidbody;
-        private InputState _inputState;
-    
-        bool pressedJump;
-    
-        // float currentHorizontalSpeed;
-        private Vector3 currentVelocity;
-    
-        PlayerState state = PlayerState.Falling;
+        
+        public GroundController groundController;
+        public Rigidbody2D playerRb;
 
-        bool pressedDash;
-        bool isDashing;
-        float currentDashDuration;
-        private Vector3 dashDirection;
+        private readonly Dictionary<KbInputEvent, Action> _inputMappings = new Dictionary<KbInputEvent, Action>();
+        public KbInputBuffer KbInputBuffer = new KbInputBuffer();
+        
+        public Vector3 currentVelocity;
+        
+        private JumpHandler _jumpHandler;
+        private DashHandler _dashHandler;
+        private RunHandler _runHandler;
 
-        void Start()
+        public Vector2 DesiredMovementDirection
         {
-            _rigidbody = GetComponent<Rigidbody2D>();
-            _groundControl = GetComponentsInChildren<GroundController>()[0];
+            get;
+            private set;
+        }
 
+        private void InitInputMapping()
+        {
+            _inputMappings.Add(new KbInputEvent(KeyCode.Space, EventType.KeyDown), () =>
+            {
+                _jumpHandler.Start();
+                KbInputBuffer.RegisterInput(KeyCode.Space, EventType.KeyDown);
+            });
+            _inputMappings.Add(new KbInputEvent(KeyCode.Space, EventType.KeyUp), () => KbInputBuffer.RegisterInput(KeyCode.Space, EventType.KeyUp));
+            
+            _inputMappings.Add(new KbInputEvent(KeyCode.LeftShift, EventType.KeyDown), () => _dashHandler.Start(DesiredMovementDirection));
+
+            // this seems kinda shitty and error prone
+            // maybe somehow replace each KeyDown/KeyUp pair with a single statement
+            _inputMappings.Add(new KbInputEvent(KeyCode.W, EventType.KeyDown), () => KbInputBuffer.RegisterInput(KeyCode.W, EventType.KeyDown));
+            _inputMappings.Add(new KbInputEvent(KeyCode.W, EventType.KeyUp), () => KbInputBuffer.RegisterInput(KeyCode.W, EventType.KeyUp));
+
+            _inputMappings.Add(new KbInputEvent(KeyCode.S, EventType.KeyDown), () => KbInputBuffer.RegisterInput(KeyCode.S, EventType.KeyDown));
+            _inputMappings.Add(new KbInputEvent(KeyCode.S, EventType.KeyUp), () => KbInputBuffer.RegisterInput(KeyCode.S, EventType.KeyUp));
+
+            _inputMappings.Add(new KbInputEvent(KeyCode.A, EventType.KeyDown), () => KbInputBuffer.RegisterInput(KeyCode.A, EventType.KeyDown));
+            _inputMappings.Add(new KbInputEvent(KeyCode.A, EventType.KeyUp), () => KbInputBuffer.RegisterInput(KeyCode.A, EventType.KeyUp));
+
+            _inputMappings.Add(new KbInputEvent(KeyCode.D, EventType.KeyDown), () => KbInputBuffer.RegisterInput(KeyCode.D, EventType.KeyDown));
+            _inputMappings.Add(new KbInputEvent(KeyCode.D, EventType.KeyUp), () => KbInputBuffer.RegisterInput(KeyCode.D, EventType.KeyUp));
+        }
+
+        public void HandleInput(InputEvent inputEvent)
+        {
+            if (_inputMappings.TryGetValue(new KbInputEvent(inputEvent.key, inputEvent.type), out var action))
+            {
+                action.Invoke();
+                print(DesiredMovementDirection);                
+            }
+        }
+
+        private void Start()
+        {
+            playerRb = GetComponent<Rigidbody2D>();
+            groundController = GetComponentInChildren<GroundController>();
+
+            _jumpHandler = new JumpHandler(playerController: this);
+            _dashHandler = new DashHandler(playerController: this);
+            _runHandler = new RunHandler(playerController: this);
+
+            InitInputMapping();
             InitPhysicsValues();
         }
 
@@ -79,177 +181,138 @@ namespace Source.PlayerController
             InitPhysicsValues();
         }
 
-        void InitPhysicsValues()
+        private void InitPhysicsValues()
         {
             jumpGravity = -(2 * jumpHeight) / (timeTillJumpPeak * timeTillJumpPeak);
             fallGravity = -(2 * jumpHeight) / (timeTillFallPeak * timeTillFallPeak);
             startVerticalSpeedUp = jumpHeight / timeTillJumpPeak - jumpGravity * timeTillJumpPeak / 2;
         }
 
-        void Update()
+        private void FixedUpdate()
         {
-            pressedJump = Input.GetAxisRaw("Jump") > 0.5f;
-        
-            if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown("joystick button 1"))
-                pressedDash = true;
+            _dashHandler.FixedUpdate();
+            _jumpHandler.FixedUpdate();
+            _runHandler.FixedUpdate();
+            
+            playerRb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
         }
 
-        void FixedUpdate()
-        {
-            bool endedDash = false;
-        
-            if (pressedDash)
-            {
-                pressedDash = false;
-                isDashing = true;
-            
-                currentVelocity = Vector3.zero;
-            
-                currentDashDuration = 0f;
-                dashDirection = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
-            }
-            else if (isDashing)
-            {
-                currentDashDuration += Time.fixedDeltaTime;
-                isDashing = currentDashDuration <= dashDuration;
-
-                // leave some momentum after dashing
-                if (!isDashing)
-                {
-                    state = PlayerState.Jumping;
-                    currentVelocity = dashDirection * afterDashMomentum;
-                    print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
-                    endedDash = true;
-                }
-            }
-
-            if (isDashing)
-            {
-                _rigidbody.MovePosition(transform.position + dashSpeed * Time.fixedDeltaTime * dashDirection);
-                return;
-            }
-
-
-            // jumping stuff
-            switch (state)
-            {
-                case PlayerState.Grounded:
-                    // no gravity calc
-                    // exit condition
-                    currentVelocity.y = 0f;
-                    if (pressedJump)
-                    {
-                        state = PlayerState.StartedJump;
-                        goto case PlayerState.StartedJump;
-                    }
-                    else if (!_groundControl.IsGrounded)
-                    {
-                        state = PlayerState.Falling;
-                        goto case PlayerState.Falling;
-                    }
-                    else
-                        break;
-
-                case PlayerState.StartedJump:
-                    // init velocity
-                    currentVelocity.y = startVerticalSpeedUp;
-
-                    // continue calculations
-                    state = PlayerState.Jumping;
-                    goto case PlayerState.Jumping;
-
-                case PlayerState.Jumping:
-                    // add jump acceleration to current jump velocity
-                    if (!pressedJump || currentVelocity.y < 0f)
-                    {
-                        state = PlayerState.Falling;
-                        goto case PlayerState.Falling;
-                    }
-
-                    currentVelocity.y += jumpGravity * Time.fixedDeltaTime;
-
-                    goto default;
-
-                case PlayerState.Falling:
-                    // add fall acceleration to current jump velocity
-                    currentVelocity.y += fallGravity * Time.fixedDeltaTime;
-
-                    goto default;
-
-                default:
-                    // make the player grounded
-                    if (_groundControl.IsGrounded)
-                        state = PlayerState.Grounded;
-
-                    break;
-            }
-        
-
-            // running stuff
-            // TODO: replace all of these fucking Mathf function calls with something better
-            var runDirection = Input.GetAxisRaw("Horizontal"); // -1, 0, 1, why not give out an int then :<
-        
-            if (endedDash)
-                print(currentVelocity);
-        
-            currentVelocity.x += GetAddedVelocity(runDirection);
-        
-            if (endedDash)
-                print(currentVelocity);
-
-            _rigidbody.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
-
-
-            float GetAddedVelocity(float runDirection)
-            {
-                if (Mathf.Abs(runDirection) < valueCloseToZero)
-                {
-                    // subtract just enough speed so it stops at 0
-                    return -Mathf.Min(Mathf.Abs(currentVelocity.x),
-                        Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentVelocity.x);
-                }
-
-
-                if (Mathf.Abs(currentVelocity.x) < valueCloseToZero // if the player is stationary (horizontally)
-                    || runDirection * currentVelocity.x > 0) // or if he continues to run in the same direction as before
-                {
-                    if (_groundControl.IsGrounded)
-                    {
-                        // brake if current velocity is greater than max
-                        if (Mathf.Abs(currentVelocity.x) > maxRunningSpeed)
-                        {
-                            return Mathf.Max(-brakeAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
-                        }
-                        return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
-                    }
-                    // conserve velocity
-                    return Mathf.Abs(currentVelocity.x) > maxRunningSpeed
-                        ? 0f
-                        : runAcceleration * Time.deltaTime * runDirection;
-
-                    // return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
-                }
-                return brakeAcceleration * runDirection * Time.deltaTime;
-            }
-
-        }
-    
-        public void HandleInput(InputEvent inputEvent)
-        {
-            if (inputEvent.key == KeyCode.Space && inputEvent.type == EventType.KeyDown)
-            {
-                _inputState.StartedJump = true;
-                _inputState.IsJumping = true;
-            }
-            
-            if (inputEvent.key == KeyCode.Space && inputEvent.type == EventType.KeyUp) 
-            {
-                _inputState.StartedJump = true;
-                _inputState.IsJumping = true;
-            }
-
-            if (inputEvent.key == KeyCode.LeftShift && inputEvent.type == EventType.KeyDown)
-                _inputState.StartedDash = true;
-        }
+        // void FixedUpdate()
+        // {
+        //     // if (isDashing)
+        //     // {
+        //     //     // leave some momentum after dashing
+        //     //     if (!isDashing)
+        //     //     {
+        //     //         state = PlayerState.Jumping;
+        //     //         currentVelocity = dashDirection * afterDashMomentum;
+        //     //         // print(dashDirection + " * " + afterDashMomentum + " = " + currentVelocity);
+        //     //     }
+        //     // }
+        //
+        //     // if (isDashing)
+        //     // {
+        //     //     playerRb.MovePosition(transform.position + dashSpeed * Time.fixedDeltaTime * dashDirection);
+        //     //     return;
+        //     // }
+        //
+        //
+        //     // jumping stuff
+        //     // switch (state)
+        //     // {
+        //     //     case PlayerState.Grounded:
+        //     //         // no gravity calc
+        //     //         // exit condition
+        //     //         currentVelocity.y = 0f;
+        //     //         if (pressedJump)
+        //     //         {
+        //     //             state = PlayerState.StartedJump;
+        //     //             goto case PlayerState.StartedJump;
+        //     //         }
+        //     //         else if (!groundControl.IsGrounded)
+        //     //         {
+        //     //             state = PlayerState.Falling;
+        //     //             goto case PlayerState.Falling;
+        //     //         }
+        //     //         else
+        //     //             break;
+        //     //
+        //     //     case PlayerState.StartedJump:
+        //     //         // init velocity
+        //     //         currentVelocity.y = startVerticalSpeedUp;
+        //     //
+        //     //         // continue calculations
+        //     //         state = PlayerState.Jumping;
+        //     //         goto case PlayerState.Jumping;
+        //     //
+        //     //     case PlayerState.Jumping:
+        //     //         // add jump acceleration to current jump velocity
+        //     //         if (!pressedJump || currentVelocity.y < 0f)
+        //     //         {
+        //     //             state = PlayerState.Falling;
+        //     //             goto case PlayerState.Falling;
+        //     //         }
+        //     //
+        //     //         currentVelocity.y += jumpGravity * Time.fixedDeltaTime;
+        //     //
+        //     //         goto default;
+        //     //
+        //     //     case PlayerState.Falling:
+        //     //         // add fall acceleration to current jump velocity
+        //     //         currentVelocity.y += fallGravity * Time.fixedDeltaTime;
+        //     //
+        //     //         goto default;
+        //     //
+        //     //     default:
+        //     //         // make the player grounded
+        //     //         if (groundControl.IsGrounded)
+        //     //             state = PlayerState.Grounded;
+        //     //
+        //     //         break;
+        //     // }
+        //
+        //
+        //     // // running stuff
+        //     // // replace all of these fucking Mathf function calls with something better
+        //     // var runDirection = Input.GetAxisRaw("Horizontal"); // -1, 0, 1, why not give out an int then :<
+        //     //
+        //     // currentVelocity.x += GetAddedVelocity(runDirection);
+        //     //
+        //     // playerRb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
+        //     //
+        //     //
+        //     // float GetAddedVelocity(float runDirection)
+        //     // {
+        //     //     if (Mathf.Abs(runDirection) < valueCloseToZero)
+        //     //     {
+        //     //         // subtract just enough speed so it stops at 0
+        //     //         return -Mathf.Min(Mathf.Abs(currentVelocity.x),
+        //     //             Mathf.Abs(stopAcceleration * Time.deltaTime)) * Mathf.Sign(currentVelocity.x);
+        //     //     }
+        //     //
+        //     //
+        //     //     if (Mathf.Abs(currentVelocity.x) < valueCloseToZero // if the player is stationary (horizontally)
+        //     //         || runDirection * currentVelocity.x > 0) // or if he continues to run in the same direction as before
+        //     //     {
+        //     //         if (groundControl.IsGrounded)
+        //     //         {
+        //     //             // brake if current velocity is greater than max
+        //     //             if (Mathf.Abs(currentVelocity.x) > maxRunningSpeed)
+        //     //             {
+        //     //                 return Mathf.Max(-brakeAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
+        //     //             }
+        //     //             return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
+        //     //         }
+        //     //         // conserve velocity
+        //     //         return Mathf.Abs(currentVelocity.x) > maxRunningSpeed
+        //     //             ? 0f
+        //     //             : runAcceleration * Time.deltaTime * runDirection;
+        //     //
+        //     //         // return Mathf.Min(runAcceleration * Time.deltaTime, maxRunningSpeed - Mathf.Abs(currentVelocity.x)) * runDirection;
+        //     //     }
+        //     //     return brakeAcceleration * runDirection * Time.deltaTime;
+        //     // }
+        //     //
+        // }
     }
 }
