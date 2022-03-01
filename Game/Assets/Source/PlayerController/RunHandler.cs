@@ -27,7 +27,7 @@ namespace Source.PlayerController
         {
             // TODO: replace all of these fucking Mathf function calls with something better
 
-            var runDirection = _playerController.DesiredMovementDirection.x; // -1, 0, 1
+            var runDirection = _playerController.KbInputBuffer.DesiredMoveDir().x; // -1, 0, 1
             
             _playerController.currentVelocity.x += GetAddedVelocity(runDirection);
 

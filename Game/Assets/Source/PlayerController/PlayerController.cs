@@ -114,7 +114,7 @@ namespace Source.PlayerController
         public Rigidbody2D playerRb;
 
         private readonly Dictionary<KbInputEvent, Action> _inputMappings = new Dictionary<KbInputEvent, Action>();
-        public KbInputBuffer KbInputBuffer = new KbInputBuffer();
+        public readonly KbInputBuffer KbInputBuffer = new KbInputBuffer();
         
         public Vector3 currentVelocity;
         
@@ -137,7 +137,7 @@ namespace Source.PlayerController
             });
             _inputMappings.Add(new KbInputEvent(KeyCode.Space, EventType.KeyUp), () => KbInputBuffer.RegisterInput(KeyCode.Space, EventType.KeyUp));
             
-            _inputMappings.Add(new KbInputEvent(KeyCode.LeftShift, EventType.KeyDown), () => _dashHandler.Start(DesiredMovementDirection));
+            _inputMappings.Add(new KbInputEvent(KeyCode.LeftShift, EventType.KeyDown), () => _dashHandler.Start(KbInputBuffer.DesiredMoveDir()));
 
             // this seems kinda shitty and error prone
             // maybe somehow replace each KeyDown/KeyUp pair with a single statement
@@ -159,7 +159,7 @@ namespace Source.PlayerController
             if (_inputMappings.TryGetValue(new KbInputEvent(inputEvent.key, inputEvent.type), out var action))
             {
                 action.Invoke();
-                print(DesiredMovementDirection);                
+                print(KbInputBuffer.DesiredMoveDir());
             }
         }
 
