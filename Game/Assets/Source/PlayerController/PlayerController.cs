@@ -7,12 +7,6 @@ using UnityEngine.InputSystem;
 
 namespace Source.PlayerController
 {
-    // TODO: make sure floor trigger gets out of ground at the first frame of the jump
-    // otherwise it might get fucky 
-    // as the state machine will end up in an infinite cycle
-
-    // TODO: rewrite the HELL out of this script
-    
     [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
@@ -40,24 +34,27 @@ namespace Source.PlayerController
         
         public GroundController groundController;
         public Rigidbody2D playerRb;
+        public PlayerInput playerInput;
         
         public Vector3 currentVelocity;
         
         private JumpHandler _jumpHandler;
         private DashHandler _dashHandler;
         private RunHandler _runHandler;
-
+        
         public Vector2 TargetMoveDir { get; private set; } = Vector2.zero;
-        public bool IsJumping { get; private set; } = false;
+        public bool IsJumping { get; private set; }
         
         private void Start()
         {
             playerRb = GetComponent<Rigidbody2D>();
             groundController = GetComponentInChildren<GroundController>();
+            playerInput = GetComponent<PlayerInput>();
 
             _jumpHandler = new JumpHandler(playerController: this);
             _dashHandler = new DashHandler(playerController: this);
             _runHandler = new RunHandler(playerController: this);
+            
 
             InitPhysicsValues();
         }
@@ -81,7 +78,7 @@ namespace Source.PlayerController
         {
             _dashHandler.Start(TargetMoveDir);
         }
-
+        
         private void OnValidate()
         {
             InitPhysicsValues();
@@ -96,13 +93,24 @@ namespace Source.PlayerController
 
         private void FixedUpdate()
         {
-            _dashHandler.FixedUpdate();
-            _jumpHandler.FixedUpdate();
-            _runHandler.FixedUpdate();
+            var isDashing = _dashHandler.FixedUpdate();
+
+            if (!isDashing)
+            {
+                _jumpHandler.FixedUpdate();
+                _runHandler.FixedUpdate();
+            }
             
+            // TODO: cast rigidbody onto new position before moving
             playerRb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
-            
-            print(TargetMoveDir + " " + IsJumping);
         }
+        
+        // public void OnSwitchMenu()
+        // {
+        //     playerInput.SwitchCurrentActionMap(_isPlayerActionMapActive ? "MainMenu" : "Player");
+        //
+        //     _isPlayerActionMapActive = !_isPlayerActionMapActive;
+        //     print("Switched to " + playerInput.currentActionMap);
+        // }
     }
 }

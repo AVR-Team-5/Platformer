@@ -2,6 +2,10 @@ using UnityEngine;
 
 namespace Source.PlayerController
 {
+    // TODO: make sure floor trigger gets out of ground at the first frame of the jump
+    // otherwise it might get fucky 
+    // as the state machine will end up in an infinite cycle
+
     internal enum JumpState
     {
         Grounded,

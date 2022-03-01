@@ -24,11 +24,11 @@ namespace Source.PlayerController
             _dashDirection = direction.normalized;
             _currentDashDuration = 0f;
 
-            _playerController.currentVelocity = Vector3.zero;
+            _playerController.currentVelocity = _playerController.dashSpeed * _dashDirection;
         }
 
         // this one should go in FixedUpdate
-        public void FixedUpdate()
+        public bool FixedUpdate()
         {
             if (_isDashing)
             {
@@ -48,11 +48,17 @@ namespace Source.PlayerController
 
             if (_isDashing)
             {
-                _playerRb.MovePosition(_playerController.transform.position +
-                                       _playerController.dashSpeed * Time.fixedDeltaTime * _dashDirection);
+                _playerController.currentVelocity = _playerController.dashSpeed * _dashDirection;
+                Debug.Log("Dashing to " + _playerController.dashSpeed * Time.fixedDeltaTime * _dashDirection);
+                
+                // _playerRb.MovePosition(_playerController.transform.position +
+                                       // _playerController.dashSpeed * Time.fixedDeltaTime * _dashDirection);
+                                       
                 // if this executes then make it cancel any other movement from _playerController
                 // kinda if this would straight up do a return in _playerController's FixedUpdate
             }
+
+            return _isDashing;
         }
     }
 }
