@@ -67,7 +67,7 @@ namespace Source.PlayerController
                     // TODO: implement hold to jump higher by keeping a jump input buffer
                     // if (!pressedJump || currentVelocity.y < 0f)
                     
-                    if (_playerController.currentVelocity.y < 0f)
+                    if (!_playerController.IsJumping || _playerController.currentVelocity.y < 0f)
                     {
                         _state = JumpState.Falling;
                         goto case JumpState.Falling;

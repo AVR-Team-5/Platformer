@@ -27,8 +27,6 @@ namespace Source.MenuSystem
         {
             if (inputEvent.key == KeyCode.Escape && inputEvent.type == EventType.KeyDown) 
                 _menuManager.PushMenu(MenuID.Main);
-            else 
-                _playerController.HandleInput(inputEvent);
         }
     }
 }
