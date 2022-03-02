@@ -363,9 +363,9 @@ MonoBehaviour:
   brakeAcceleration: 20
   stopAcceleration: 20
   valueCloseToZero: 0.1
-  dashDuration: 0.5
-  dashSpeed: 10
-  afterDashMomentum: 10
+  dashDuration: 0.2
+  dashSpeed: 30
+  afterDashMomentum: 30
   groundController: {fileID: 0}
   playerRb: {fileID: 0}
   playerInput: {fileID: 0}
