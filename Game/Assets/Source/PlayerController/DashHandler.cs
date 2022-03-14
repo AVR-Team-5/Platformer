@@ -49,7 +49,7 @@ namespace Source.PlayerController
             if (_isDashing)
             {
                 _playerController.currentVelocity = _playerController.dashSpeed * _dashDirection;
-                Debug.Log("Dashing to " + _playerController.dashSpeed * Time.fixedDeltaTime * _dashDirection);
+                // Debug.Log("Dashing to " + _playerController.dashSpeed * Time.fixedDeltaTime * _dashDirection);
                 
                 // _playerRb.MovePosition(_playerController.transform.position +
                                        // _playerController.dashSpeed * Time.fixedDeltaTime * _dashDirection);

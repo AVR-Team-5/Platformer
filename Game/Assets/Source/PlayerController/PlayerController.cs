@@ -10,7 +10,6 @@ namespace Source.PlayerController
     [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
-        // TODO: reinit these values if they're switched in editor
         public float jumpHeight;
         public float timeTillJumpPeak;
         public float timeTillFallPeak;
@@ -31,12 +30,13 @@ namespace Source.PlayerController
         public float dashSpeed;
         public float afterDashMomentum;
 
-        
         public GroundController groundController;
         public Rigidbody2D playerRb;
         public PlayerInput playerInput;
         
-        public Vector3 currentVelocity;
+        public Vector2 currentVelocity;
+        private readonly List<RaycastHit2D> _raycastHits = new List<RaycastHit2D>();
+        private int _frameCounter = 0;
         
         private JumpHandler _jumpHandler;
         private DashHandler _dashHandler;
@@ -93,6 +93,7 @@ namespace Source.PlayerController
 
         private void FixedUpdate()
         {
+            _frameCounter++;
             var isDashing = _dashHandler.FixedUpdate();
 
             if (!isDashing)
@@ -102,7 +103,40 @@ namespace Source.PlayerController
             }
             
             // TODO: cast rigidbody onto new position before moving
-            playerRb.MovePosition(transform.position + currentVelocity * Time.fixedDeltaTime);
+            
+            // if (currentVelocity.magnitude > valueCloseToZero)
+            // {
+            //     var velocityDelta = currentVelocity * Time.fixedDeltaTime;
+            //     var distance = velocityDelta.magnitude;
+            //
+            //     playerRb.Cast(currentVelocity, _raycastHits, distance);
+            //
+            //     foreach (var raycastHit in _raycastHits)
+            //     {
+            //         var currentNormal = raycastHit.normal;
+            //         // rotate the normal by 90 degrees to get the slope vector
+            //         // var slopeVector = new Vector2(currentNormal.y, -currentNormal.x);
+            //
+            //         // TODO: actually implement the slide on steep angles
+            //         // if (currentNormal.y > maxNormalYToSlide)
+            //         // {
+            //         //     //grounded!
+            //         // }
+            //
+            //         var projection = Vector2.Dot(currentVelocity, currentNormal);
+            //         
+            //         // print(_frameCounter + ": Dot product of " + currentVelocity + " and " + currentNormal + " is " + projection );
+            //         print(_frameCounter + ": collision with " + raycastHit.collider.name);
+            //
+            //         if (projection < 0)
+            //             currentVelocity -= projection * currentNormal;
+            //     }
+            //     
+            //     _raycastHits.Clear();
+            // }
+            
+            if (currentVelocity.magnitude > valueCloseToZero)
+                playerRb.MovePosition(transform.position + (Vector3)currentVelocity * Time.fixedDeltaTime);
         }
         
         // public void OnSwitchMenu()
