@@ -33,6 +33,7 @@ namespace Source.PlayerController
         public GroundController groundController;
         public Rigidbody2D playerRb;
         public PlayerInput playerInput;
+        public Animator animator;
         
         public Vector2 currentVelocity;
         private readonly List<RaycastHit2D> _raycastHits = new List<RaycastHit2D>();
@@ -44,12 +45,16 @@ namespace Source.PlayerController
         
         public Vector2 TargetMoveDir { get; private set; } = Vector2.zero;
         public bool IsJumping { get; private set; }
+        private bool _isMovingLeft = false;
+
+
         
         private void Start()
         {
             playerRb = GetComponent<Rigidbody2D>();
             groundController = GetComponentInChildren<GroundController>();
             playerInput = GetComponent<PlayerInput>();
+            animator = GetComponent<Animator>();
 
             _jumpHandler = new JumpHandler(playerController: this);
             _dashHandler = new DashHandler(playerController: this);
@@ -138,13 +143,21 @@ namespace Source.PlayerController
             if (currentVelocity.magnitude > valueCloseToZero)
                 playerRb.MovePosition(transform.position + (Vector3)currentVelocity * Time.fixedDeltaTime);
         }
-        
-        // public void OnSwitchMenu()
-        // {
-        //     playerInput.SwitchCurrentActionMap(_isPlayerActionMapActive ? "MainMenu" : "Player");
-        //
-        //     _isPlayerActionMapActive = !_isPlayerActionMapActive;
-        //     print("Switched to " + playerInput.currentActionMap);
-        // }
+
+        private void Update() {
+            if (currentVelocity.x > valueCloseToZero) {
+                transform.localScale = Vector3.one;
+                print("mirrored right");
+            }
+            else if (currentVelocity.x < -valueCloseToZero) {
+                transform.localScale = new Vector3(-1, 1, 1);
+                print("mirrored left");
+            }
+
+            animator.SetFloat("XVelocity", Mathf.Abs(currentVelocity.x));
+            animator.SetFloat("YVelocity", currentVelocity.y);
+            animator.SetBool("IsGrounded", groundController.isGrounded);
+            // animator.SetBool("IsMovingLeft", _isMovingLeft);
+        }
     }
 }
