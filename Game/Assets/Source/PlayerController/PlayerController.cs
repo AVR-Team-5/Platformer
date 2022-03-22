@@ -157,7 +157,6 @@ namespace Source.PlayerController
             animator.SetFloat("XVelocity", Mathf.Abs(currentVelocity.x));
             animator.SetFloat("YVelocity", currentVelocity.y);
             animator.SetBool("IsGrounded", groundController.isGrounded);
-            // animator.SetBool("IsMovingLeft", _isMovingLeft);
         }
     }
 }
