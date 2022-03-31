@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Source.MenuSystem;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -25,7 +22,7 @@ namespace Source.PlayerController
         public float stopAcceleration;
         public float valueCloseToZero;
 
-        [Space(10)] 
+        [Space(10)]
         public float dashDuration;
         public float dashSpeed;
         public float afterDashMomentum;
@@ -34,21 +31,21 @@ namespace Source.PlayerController
         public Rigidbody2D playerRb;
         public PlayerInput playerInput;
         public Animator animator;
-        
+
         public Vector2 currentVelocity;
         private readonly List<RaycastHit2D> _raycastHits = new List<RaycastHit2D>();
         private int _frameCounter = 0;
-        
+
         private JumpHandler _jumpHandler;
         private DashHandler _dashHandler;
         private RunHandler _runHandler;
-        
+
         public Vector2 TargetMoveDir { get; private set; } = Vector2.zero;
         public bool IsJumping { get; private set; }
         private bool _isMovingLeft = false;
 
 
-        
+
         private void Start()
         {
             playerRb = GetComponent<Rigidbody2D>();
@@ -59,7 +56,7 @@ namespace Source.PlayerController
             _jumpHandler = new JumpHandler(playerController: this);
             _dashHandler = new DashHandler(playerController: this);
             _runHandler = new RunHandler(playerController: this);
-            
+
 
             InitPhysicsValues();
         }
@@ -83,7 +80,7 @@ namespace Source.PlayerController
         {
             _dashHandler.Start(TargetMoveDir);
         }
-        
+
         private void OnValidate()
         {
             InitPhysicsValues();
@@ -106,9 +103,9 @@ namespace Source.PlayerController
                 _jumpHandler.FixedUpdate();
                 _runHandler.FixedUpdate();
             }
-            
+
             // TODO: cast rigidbody onto new position before moving
-            
+
             // if (currentVelocity.magnitude > valueCloseToZero)
             // {
             //     var velocityDelta = currentVelocity * Time.fixedDeltaTime;
@@ -139,17 +136,20 @@ namespace Source.PlayerController
             //     
             //     _raycastHits.Clear();
             // }
-            
+
             if (currentVelocity.magnitude > valueCloseToZero)
                 playerRb.MovePosition(transform.position + (Vector3)currentVelocity * Time.fixedDeltaTime);
         }
 
-        private void Update() {
-            if (currentVelocity.x > valueCloseToZero) {
+        private void Update()
+        {
+            if (currentVelocity.x > valueCloseToZero)
+            {
                 transform.localScale = Vector3.one;
                 print("mirrored right");
             }
-            else if (currentVelocity.x < -valueCloseToZero) {
+            else if (currentVelocity.x < -valueCloseToZero)
+            {
                 transform.localScale = new Vector3(-1, 1, 1);
                 print("mirrored left");
             }
@@ -157,6 +157,13 @@ namespace Source.PlayerController
             animator.SetFloat("XVelocity", Mathf.Abs(currentVelocity.x));
             animator.SetFloat("YVelocity", currentVelocity.y);
             animator.SetBool("IsGrounded", groundController.isGrounded);
+        }
+
+        void OnDrawGizmos()
+        {
+            // Draw a yellow sphere at the transform's position
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawSphere(transform.position, 0.1f);
         }
     }
 }
