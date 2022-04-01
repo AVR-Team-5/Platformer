@@ -4,6 +4,29 @@ using UnityEngine.InputSystem;
 
 namespace Source.PlayerController
 {
+    enum AnimPriorityFlags {
+        // inferred from the context
+        // idle, jumping, walljumping, falling
+        // running, wallslide
+        None = 0,
+
+        // minimal player input
+        Low = 1 << 0,
+
+        // kinda important player actions
+        // start jump, start wall jump
+        Medium = 1 << 1,
+
+        // important player actions
+        // attacks (low, high, overhead)
+        High = 1 << 2,
+
+        // Critical actions
+        // hitstun
+        Critical = 1 << 3,
+    }
+
+
     [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
@@ -41,8 +64,15 @@ namespace Source.PlayerController
         private RunHandler _runHandler;
 
         public Vector2 TargetMoveDir { get; private set; } = Vector2.zero;
+        bool IsRunning
+        {
+            get { return TargetMoveDir.magnitude > valueCloseToZero; }
+        }
         public bool IsJumping { get; private set; }
+        public bool IsMeleeAttacking = false;
+        public bool IsRangedAttacking = false;
         private bool _isMovingLeft = false;
+        private int _animPriorityFlag = 0;
 
 
 
@@ -79,6 +109,24 @@ namespace Source.PlayerController
         public void OnDash()
         {
             _dashHandler.Start(TargetMoveDir);
+        }
+
+        public void OnMeleeAttack(InputValue value)
+        {
+            IsMeleeAttacking = value.isPressed;
+
+            if (IsMeleeAttacking)
+                _animPriorityFlag |= (int)AnimPriorityFlags.High;
+            print(IsMeleeAttacking);
+        }
+
+        public void OnRangedAttack(InputValue value)
+        {
+            IsRangedAttacking = value.isPressed;
+
+            if (IsRangedAttacking)
+                _animPriorityFlag |= (int)AnimPriorityFlags.High;
+            print(IsRangedAttacking);
         }
 
         private void OnValidate()
@@ -143,12 +191,12 @@ namespace Source.PlayerController
 
         private void Update()
         {
-            if (currentVelocity.x > valueCloseToZero)
+            if (TargetMoveDir.x > valueCloseToZero)
             {
                 transform.localScale = Vector3.one;
                 print("mirrored right");
             }
-            else if (currentVelocity.x < -valueCloseToZero)
+            else if (TargetMoveDir.x < -valueCloseToZero)
             {
                 transform.localScale = new Vector3(-1, 1, 1);
                 print("mirrored left");
@@ -157,6 +205,10 @@ namespace Source.PlayerController
             animator.SetFloat("XVelocity", Mathf.Abs(currentVelocity.x));
             animator.SetFloat("YVelocity", currentVelocity.y);
             animator.SetBool("IsGrounded", groundController.isGrounded);
+            animator.SetBool("IsRunning", IsRunning);
+            animator.SetBool("IsMeleeAttacking", IsMeleeAttacking);
+            animator.SetBool("IsRangedAttacking", IsRangedAttacking);
+            animator.SetInteger("AnimPriorityFlag", _animPriorityFlag);
         }
 
         void OnDrawGizmos()
@@ -165,5 +217,15 @@ namespace Source.PlayerController
             Gizmos.color = Color.yellow;
             Gizmos.DrawSphere(transform.position, 0.1f);
         }
+
+        public void AnimationEndHandler() {
+            ResetAnimPriority();
+        }
+
+        public void ResetAnimPriority() {
+            _animPriorityFlag = 0;
+        }
+
+        
     }
 }
