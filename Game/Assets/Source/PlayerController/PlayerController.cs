@@ -1,12 +1,32 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Source.MenuSystem;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace Source.PlayerController
 {
+    enum AnimPriorityFlags {
+        // inferred from the context
+        // idle, jumping, walljumping, falling
+        // running, wallslide
+        None = 0,
+
+        // minimal player input
+        Low = 1 << 0,
+
+        // kinda important player actions
+        // start jump, start wall jump
+        Medium = 1 << 1,
+
+        // important player actions
+        // attacks (low, high, overhead)
+        High = 1 << 2,
+
+        // Critical actions
+        // hitstun
+        Critical = 1 << 3,
+    }
+
+
     [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
@@ -25,7 +45,7 @@ namespace Source.PlayerController
         public float stopAcceleration;
         public float valueCloseToZero;
 
-        [Space(10)] 
+        [Space(10)]
         public float dashDuration;
         public float dashSpeed;
         public float afterDashMomentum;
@@ -34,21 +54,28 @@ namespace Source.PlayerController
         public Rigidbody2D playerRb;
         public PlayerInput playerInput;
         public Animator animator;
-        
+
         public Vector2 currentVelocity;
         private readonly List<RaycastHit2D> _raycastHits = new List<RaycastHit2D>();
         private int _frameCounter = 0;
-        
+
         private JumpHandler _jumpHandler;
         private DashHandler _dashHandler;
         private RunHandler _runHandler;
-        
+
         public Vector2 TargetMoveDir { get; private set; } = Vector2.zero;
+        bool IsRunning
+        {
+            get { return TargetMoveDir.magnitude > valueCloseToZero; }
+        }
         public bool IsJumping { get; private set; }
+        public bool IsMeleeAttacking = false;
+        public bool IsRangedAttacking = false;
         private bool _isMovingLeft = false;
+        private int _animPriorityFlag = 0;
 
 
-        
+
         private void Start()
         {
             playerRb = GetComponent<Rigidbody2D>();
@@ -59,7 +86,7 @@ namespace Source.PlayerController
             _jumpHandler = new JumpHandler(playerController: this);
             _dashHandler = new DashHandler(playerController: this);
             _runHandler = new RunHandler(playerController: this);
-            
+
 
             InitPhysicsValues();
         }
@@ -83,7 +110,25 @@ namespace Source.PlayerController
         {
             _dashHandler.Start(TargetMoveDir);
         }
-        
+
+        public void OnMeleeAttack(InputValue value)
+        {
+            IsMeleeAttacking = value.isPressed;
+
+            if (IsMeleeAttacking)
+                _animPriorityFlag |= (int)AnimPriorityFlags.High;
+            print(IsMeleeAttacking);
+        }
+
+        public void OnRangedAttack(InputValue value)
+        {
+            IsRangedAttacking = value.isPressed;
+
+            if (IsRangedAttacking)
+                _animPriorityFlag |= (int)AnimPriorityFlags.High;
+            print(IsRangedAttacking);
+        }
+
         private void OnValidate()
         {
             InitPhysicsValues();
@@ -106,9 +151,9 @@ namespace Source.PlayerController
                 _jumpHandler.FixedUpdate();
                 _runHandler.FixedUpdate();
             }
-            
+
             // TODO: cast rigidbody onto new position before moving
-            
+
             // if (currentVelocity.magnitude > valueCloseToZero)
             // {
             //     var velocityDelta = currentVelocity * Time.fixedDeltaTime;
@@ -139,17 +184,20 @@ namespace Source.PlayerController
             //     
             //     _raycastHits.Clear();
             // }
-            
+
             if (currentVelocity.magnitude > valueCloseToZero)
                 playerRb.MovePosition(transform.position + (Vector3)currentVelocity * Time.fixedDeltaTime);
         }
 
-        private void Update() {
-            if (currentVelocity.x > valueCloseToZero) {
+        private void Update()
+        {
+            if (TargetMoveDir.x > valueCloseToZero)
+            {
                 transform.localScale = Vector3.one;
                 print("mirrored right");
             }
-            else if (currentVelocity.x < -valueCloseToZero) {
+            else if (TargetMoveDir.x < -valueCloseToZero)
+            {
                 transform.localScale = new Vector3(-1, 1, 1);
                 print("mirrored left");
             }
@@ -157,6 +205,27 @@ namespace Source.PlayerController
             animator.SetFloat("XVelocity", Mathf.Abs(currentVelocity.x));
             animator.SetFloat("YVelocity", currentVelocity.y);
             animator.SetBool("IsGrounded", groundController.isGrounded);
+            animator.SetBool("IsRunning", IsRunning);
+            animator.SetBool("IsMeleeAttacking", IsMeleeAttacking);
+            animator.SetBool("IsRangedAttacking", IsRangedAttacking);
+            animator.SetInteger("AnimPriorityFlag", _animPriorityFlag);
         }
+
+        void OnDrawGizmos()
+        {
+            // Draw a yellow sphere at the transform's position
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawSphere(transform.position, 0.1f);
+        }
+
+        public void AnimationEndHandler() {
+            ResetAnimPriority();
+        }
+
+        public void ResetAnimPriority() {
+            _animPriorityFlag = 0;
+        }
+
+        
     }
 }
