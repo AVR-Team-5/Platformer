@@ -1,19 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(BoxCollider2D))]
-public class GroundController : MonoBehaviour
+namespace Source.PlayerController
 {
-    public bool IsGrounded { get { return isGrounded; } }
-    public bool isGrounded = false;
-    void OnTriggerEnter2D(Collider2D col)
+    [RequireComponent(typeof(BoxCollider2D))]
+    public class GroundController : MonoBehaviour
     {
-        isGrounded = true;
-    }
+        public bool IsGrounded { get; private set; }
 
-    void OnTriggerExit2D(Collider2D col)
-    {
-        isGrounded = false;
+        private void OnTriggerEnter2D(Collider2D col)
+        {
+            IsGrounded = true;
+        }
+
+        private void OnTriggerExit2D(Collider2D col)
+        {
+            IsGrounded = false;
+        }
     }
 }
