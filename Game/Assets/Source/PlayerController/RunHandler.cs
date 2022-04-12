@@ -12,6 +12,10 @@ namespace Source.PlayerController
         
         private PlayerController _playerController;
         private GroundController _groundController;
+        private GroundController _leftController;
+        private GroundController _rightController;
+
+        
 
         [SerializeField] private float maxRunningSpeed;
         [SerializeField] private float runAcceleration;
@@ -30,6 +34,8 @@ namespace Source.PlayerController
         {
             _playerController = GetComponent<PlayerController>();
             _groundController = _playerController.groundController;
+            _leftController = _playerController.leftWallController;
+            _rightController = _playerController.rightWallController;
         }
 
         public void FixedUpdate()
@@ -42,7 +48,9 @@ namespace Source.PlayerController
 
             float GetAddedVelocity(float runDirection)
             {
-                if (Abs(runDirection) < valueCloseToZero || !canRun)
+                if (Abs(runDirection) < valueCloseToZero || !canRun ||
+                    (runDirection > valueCloseToZero && _rightController.IsGrounded) ||
+                    (runDirection < -valueCloseToZero && _leftController.IsGrounded))
                 {
                     // subtract just enough speed so it stops at 0
                     return -Min(Abs(_playerController.currentVelocity.x),
