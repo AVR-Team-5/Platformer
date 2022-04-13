@@ -273,6 +273,8 @@ MonoBehaviour:
   runAcceleration: 20
   brakeAcceleration: 20
   stopAcceleration: 20
+  airBrakeAcceleration: 20
+  airStopAcceleration: 20
   valueCloseToZero: 0.01
 --- !u!4 &144780039 stripped
 Transform:
@@ -586,6 +588,8 @@ MonoBehaviour:
   runAcceleration: 0
   brakeAcceleration: 0
   stopAcceleration: 0
+  airBrakeAcceleration: 0
+  airStopAcceleration: 0
   valueCloseToZero: 0
 --- !u!114 &498274185
 MonoBehaviour:
@@ -2186,6 +2190,8 @@ MonoBehaviour:
   runAcceleration: 0
   brakeAcceleration: 0
   stopAcceleration: 0
+  airBrakeAcceleration: 0
+  airStopAcceleration: 0
   valueCloseToZero: 0
 --- !u!114 &3669749206994940651
 MonoBehaviour:
