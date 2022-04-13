@@ -29,6 +29,12 @@ namespace Source.PlayerController
         {
             TargetMoveDirX = value.Get<Vector2>().x;
         }
+        
+        // public void OnMovementX(InputValue value)
+        // {
+        //     TargetMoveDirX = value.Get<float>();
+        // }
+
 
         private void Start()
         {
