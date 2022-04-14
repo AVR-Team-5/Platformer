@@ -38,7 +38,6 @@ namespace Source.PlayerController
             TargetMoveDirX = value.Get<float>();
         }
 
-
         private void Start()
         {
             _playerController = GetComponent<PlayerController>();

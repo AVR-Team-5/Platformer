@@ -15,20 +15,16 @@ namespace Source.PlayerController
         
         private bool _isLookingRight = true;
         private int _currentLowPriorityAnim;
-
-        private float _lastOnMovXValue;
-        private float _largestDiff;
-
-        public float TargetMoveDirX { get; private set; }
         
-        public void OnMovement(InputValue value)
-        {
-            TargetMoveDirX = value.Get<Vector2>().x;
-        }
+        public float TargetMoveDirX { get; private set; }
         
         public void OnMovementX(InputValue value)
         {
-            _lastOnMovXValue = value.Get<float>();
+            TargetMoveDirX = value.Get<float>();
+            
+            if (Mathf.Abs(TargetMoveDirX) > valueCloseToZero)
+                if (TargetMoveDirX > 0f != _isLookingRight)
+                    RotateCharacter(!_isLookingRight);
         }
 
         private void Start()
@@ -44,15 +40,18 @@ namespace Source.PlayerController
             _animator.Play(AnimClips.MeleeAtkOverhead);
         }
 
+        public void RotateCharacter(bool right)
+        {
+            if (_isLookingRight == right) return;
+            
+            transform.Rotate(0f, 180f, 0f);
+            _isLookingRight = !_isLookingRight;
+        }
+
         private void Update()
         {
-            if (Mathf.Abs(TargetMoveDirX - _lastOnMovXValue) > _largestDiff)
-            {
-                _largestDiff = Mathf.Abs(TargetMoveDirX - _lastOnMovXValue);
-                print(_largestDiff);
-            }
             // low priority stuff
-            // don't mind the absolute ton of ifs
+            // don't mind the absolute ton of ifs in a performance critical context
             // this is quite literally a decision tree written as code
             if (_groundController.IsGrounded)
             {
@@ -64,7 +63,9 @@ namespace Source.PlayerController
             else
             {
                 if (_jumpHandler.IsWallSliding)
+                {
                     StartLowPriorityAnim(AnimClips.WallSlide);
+                }
                 else
                 {
                     if (_playerController.currentVelocity.y > valueCloseToZero)
@@ -106,7 +107,7 @@ namespace Source.PlayerController
         public static readonly int StartWallJump = Animator.StringToHash("Player_StartWallJump");
         public static readonly int Jumping = Animator.StringToHash("Player_Jumping");
         public static readonly int WallJumping = Animator.StringToHash("Player_WallJumping");
-        public static readonly int WallSlide = Animator.StringToHash("Player_WallSlide");
+        public static readonly int WallSlide = Animator.StringToHash("Player_WallSlideV2");
         public static readonly int Falling = Animator.StringToHash("Player_Falling");
     }
 
