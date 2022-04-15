@@ -27,8 +27,6 @@ namespace Source.PlayerController
             if (Mathf.Abs(TargetMoveDirX) > valueCloseToZero)
                 if (TargetMoveDirX > 0f != IsLookingRight && !_jumpHandler.IsWallSliding)
                     RotateCharacter(!IsLookingRight);
-            
-            print(TargetMoveDirX);
         }
 
         private void Start()
