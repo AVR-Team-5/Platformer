@@ -1,19 +1,21 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 namespace Source.PlayerController
 {
     public class AnimHandler : MonoBehaviour
     {
         public float valueCloseToZero = 0.01f;
+        public Transform tfToRotate;
         
         private PlayerController _playerController;
         private GroundController _groundController;
         private JumpHandler _jumpHandler;
         private Animator _animator;
-        
-        private bool _isLookingRight = true;
+
+        public bool IsLookingRight { get; private set; } = true;
         private int _currentLowPriorityAnim;
         
         public float TargetMoveDirX { get; private set; }
@@ -23,8 +25,10 @@ namespace Source.PlayerController
             TargetMoveDirX = value.Get<float>();
             
             if (Mathf.Abs(TargetMoveDirX) > valueCloseToZero)
-                if (TargetMoveDirX > 0f != _isLookingRight)
-                    RotateCharacter(!_isLookingRight);
+                if (TargetMoveDirX > 0f != IsLookingRight && !_jumpHandler.IsWallSliding)
+                    RotateCharacter(!IsLookingRight);
+            
+            print(TargetMoveDirX);
         }
 
         private void Start()
@@ -42,10 +46,10 @@ namespace Source.PlayerController
 
         public void RotateCharacter(bool right)
         {
-            if (_isLookingRight == right) return;
+            if (IsLookingRight == right) return;
             
-            transform.Rotate(0f, 180f, 0f);
-            _isLookingRight = !_isLookingRight;
+            tfToRotate.Rotate(0f, 180f, 0f);
+            IsLookingRight = !IsLookingRight;
         }
 
         private void Update()

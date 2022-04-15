@@ -26,6 +26,7 @@ namespace Source.PlayerController
         private GroundController _right;
 
         [SerializeField] private float valueCloseToZero;
+        [SerializeField] private float stopWallSlideThreshold;
         [SerializeField] private float jumpHeight;
         [SerializeField] private float timeTillJumpPeak;
         [SerializeField] private float timeTillFallPeak;
@@ -113,6 +114,8 @@ namespace Source.PlayerController
 
                 // continue calculations
                 _state = JumpState.Jumping;
+                
+                _animHandler.RotateCharacter(_wallSlideDir > 0);
                 IsWallSliding = false;
             }
         }
@@ -146,7 +149,7 @@ namespace Source.PlayerController
         public bool StopWallSlide()
         {
             // adding a bit of delta to the input check for stick micro movement
-            return IsWallSliding && (_wallSlideDir * TargetMoveDirX < -valueCloseToZero
+            return IsWallSliding && (_wallSlideDir * TargetMoveDirX < -stopWallSlideThreshold
                                       || IsGrounded()
                                       || (!_left.IsGrounded && !_right.IsGrounded));
         }
