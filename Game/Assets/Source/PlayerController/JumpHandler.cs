@@ -101,6 +101,7 @@ namespace Source.PlayerController
 
                 // continue calculations
                 _state = JumpState.Jumping;
+                _animHandler.StartHighPriorityAnim(AnimClips.StartJump);
             }
             else if (IsWallSliding)
             {
@@ -115,8 +116,9 @@ namespace Source.PlayerController
                 // continue calculations
                 _state = JumpState.Jumping;
                 
-                _animHandler.RotateCharacter(_wallSlideDir > 0);
+                _animHandler.RotateCharacter(!(_wallSlideDir > 0));
                 IsWallSliding = false;
+                _animHandler.StartHighPriorityAnim(AnimClips.StartWallJump);
             }
         }
 
@@ -172,6 +174,7 @@ namespace Source.PlayerController
             else if (StopWallSlide())
             {
                 IsWallSliding = false;
+                _animHandler.ResetRotation();
             }
 
             switch (_state)

@@ -23,10 +23,8 @@ namespace Source.PlayerController
         public void OnMovementX(InputValue value)
         {
             TargetMoveDirX = value.Get<float>();
-            
-            if (Mathf.Abs(TargetMoveDirX) > valueCloseToZero)
-                if (TargetMoveDirX > 0f != IsLookingRight && !_jumpHandler.IsWallSliding)
-                    RotateCharacter(!IsLookingRight);
+
+            ResetRotation();
         }
 
         private void Start()
@@ -48,6 +46,13 @@ namespace Source.PlayerController
             
             tfToRotate.Rotate(0f, 180f, 0f);
             IsLookingRight = !IsLookingRight;
+        }
+
+        public void ResetRotation()
+        {
+            if (Mathf.Abs(TargetMoveDirX) > valueCloseToZero)
+                if (TargetMoveDirX > 0f != IsLookingRight && !_jumpHandler.IsWallSliding)
+                    RotateCharacter(!IsLookingRight);
         }
 
         private void Update()
